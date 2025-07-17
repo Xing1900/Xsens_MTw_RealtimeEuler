@@ -332,6 +332,8 @@ if __name__ == '__main__':
                     quarterly_data[i] = packet.orientationQuaternion()  # Update the real-time quaternion data
                     mtw_callbacks[i].deleteOldestPacket()
 
+            #已经获取初始四元数reference_quat[i],实时四元数quarterly_data[i]，相对四元数relative_quat[i]的计算还没有实现，并转换成欧拉角
+
             if new_data_available:
                 # print only 1/x of the data in the screen.
                 if print_counter % 1 == 0:
@@ -339,8 +341,8 @@ if __name__ == '__main__':
                         print(f"[{i}]: ID: {mtw_callbacks[i].device().deviceId()}, "
                             f"Roll: {euler_data[i].x():7.2f}, "
                             f"Pitch: {euler_data[i].y():7.2f}, "
-                            f"Yaw: {euler_data[i].z():7.2f}，"
-                            f"Quaternion: {quarterly_data[i]}"                   #print四元数组  还没处理好输出相对四元数
+                            f"Yaw: {euler_data[i].z():7.2f}, "
+                            f"Quaternion: {quarterly_data[i]}"                   #print四元数组  
                             )
 
                 print_counter += 1

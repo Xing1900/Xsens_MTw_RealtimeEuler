@@ -34,6 +34,7 @@ from threading import Lock
 #---------------------------------------------------------------------------------#
 import xsensdeviceapi as xda #for windows only
 import keyboard
+import math
 
 #remove the added path after importing(optional)
 #sys.path.pop(0)
@@ -57,6 +58,16 @@ def find_closest_update_rate(supported_update_rates, desired_update_rate):
 
     closest_update_rate = min(supported_update_rates, key=lambda x: abs(x - desired_update_rate))
     return closest_update_rate
+
+def average_quaternions(q_list):
+    """对多个四元数简单平均并归一化"""
+    w = sum([q.w() for q in q_list]) / len(q_list)
+    x = sum([q.x() for q in q_list]) / len(q_list)
+    y = sum([q.y() for q in q_list]) / len(q_list)
+    z = sum([q.z() for q in q_list]) / len(q_list)
+    norm = math.sqrt(w**2 + x**2 + y**2 + z**2)
+    return xda.XsQuaternion(x / norm, y / norm, z / norm, w / norm)
+
 
 class WirelessMasterCallback(xda.XsCallback):
     def __init__(self):
@@ -267,31 +278,65 @@ if __name__ == '__main__':
         euler_data = [xda.XsEuler()] * len(mtw_callbacks)
         quarterly_data = [xda.XsQuaternion(None)] * len(mtw_callbacks)   #储存实时四元数
 
+        
+        # For reference data collection
+        reference_quat = [None] * len(mtw_callbacks)     #储存相对四元数
+        reference_set = False
+
+        SAMPLES_FOR_REFERENCE = 100        # Number of samples to collect for reference data
+        reference_buffer = [[] for _ in range(len(mtw_callbacks))]
+
         print_counter = 0
         while not user_input_ready():
             time.sleep(0)
 
-            new_data_available = False
-            for i in range(len(mtw_callbacks)):
-                if mtw_callbacks[i].dataAvailable():
-                    new_data_available = True
-                    packet = mtw_callbacks[i].getOldestPacket()
-                    euler_data[i] = packet.orientationEuler()
-                    quarterly_data[i] = packet.orientationQuaternion() # 获取四元数
-                    mtw_callbacks[i].deleteOldestPacket()
+            wait_for_reference = True
+            while wait_for_reference:
+                time.sleep(0.1)
+                print(f" Press 'Space' to start getting reference orientation.")
+                wait_for_reference = not keyboard.is_pressed('space')
+
+            if  not reference_set:
+                print("Collecting reference data...keep the sensors still.")
+
+                for sample in range(SAMPLES_FOR_REFERENCE):
+                    time.sleep(0.1)           # Adjust the sleep time as needed
+
+                    new_data_available = False
+                    for i in range(len(mtw_callbacks)):
+                        if mtw_callbacks[i].dataAvailable():
+                            new_data_available = True
+                            packet = mtw_callbacks[i].getOldestPacket()
+                            euler_data[i] = packet.orientationEuler()
+                            quarterly_data[i] = packet.orientationQuaternion() # 获取四元数组
+                            mtw_callbacks[i].deleteOldestPacket()
+
+                # Collect reference quaternion data
+                for i in range(len(mtw_callbacks)):
+                    if mtw_callbacks[i].dataAvailable():
+                        Q_list=reference_buffer[i]
+                        ave_Q= average_quaternion(Q_list)
+                        reference_quat[i] = ave_Q
+
+                reference_set = True
+                print("Reference data collected.")
+
+
 
             if new_data_available:
                 # print only 1/x of the data in the screen.
                 if print_counter % 1 == 0:
                     for i in range(len(mtw_callbacks)):
                         print(f"[{i}]: ID: {mtw_callbacks[i].device().deviceId()}, "
-                              f"Roll: {euler_data[i].x():7.2f}, "
-                              f"Pitch: {euler_data[i].y():7.2f}, "
-                              f"Yaw: {euler_data[i].z():7.2f}，"
-                              f"Quaternion: {quarterly_data[i]}"                   #四元数
-                              )
+                            f"Roll: {euler_data[i].x():7.2f}, "
+                            f"Pitch: {euler_data[i].y():7.2f}, "
+                            f"Yaw: {euler_data[i].z():7.2f}，"
+                            f"Quaternion: {quarterly_data[i]}"                   #print四元数组
+                            )
 
                 print_counter += 1
+
+
 
         print("Setting config mode...")
         if not wireless_master_device.gotoConfig():

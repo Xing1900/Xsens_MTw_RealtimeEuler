@@ -141,7 +141,7 @@ class MtwCallback(xda.XsCallback):
 
 
 if __name__ == '__main__':
-    desired_update_rate = 75
+    desired_update_rate = 100  # Hz
     desired_radio_channel = 19
 
     wireless_master_callback = WirelessMasterCallback()
@@ -285,12 +285,12 @@ if __name__ == '__main__':
 
         SAMPLES_FOR_REFERENCE = 100        # Number of samples to collect for reference data
         reference_buffer = [[] for _ in range(len(mtw_callbacks))]
+        wait_for_reference = True
 
         print_counter = 0
         while not user_input_ready():
             time.sleep(0)
 
-            wait_for_reference = True
             while wait_for_reference:
                 time.sleep(0.1)
                 print(f" Press 'Space' to start getting reference orientation.")
@@ -302,13 +302,13 @@ if __name__ == '__main__':
                 for sample in range(SAMPLES_FOR_REFERENCE):
                     time.sleep(0.1)           # Adjust the sleep time as needed
 
-                    new_data_available = False
                     for i in range(len(mtw_callbacks)):
                         if mtw_callbacks[i].dataAvailable():
-                            new_data_available = True
                             packet = mtw_callbacks[i].getOldestPacket()
                             euler_data[i] = packet.orientationEuler()
-                            quarterly_data[i] = packet.orientationQuaternion() # 获取四元数组
+                            Q = packet.orientationQuaternion() 
+                            reference_buffer[i].append(Q)
+                            quarterly_data[i] = Q  # Update the real-time quaternion data
                             mtw_callbacks[i].deleteOldestPacket()
 
                 # Collect reference quaternion data
@@ -322,7 +322,15 @@ if __name__ == '__main__':
                 print("Reference data collected.")
                 print(f"Reference Quaternion: {[f'{q.w():.2f}, {q.x():.2f}, {q.y():.2f}, {q.z():.2f}' for q in reference_quat]}")
 
-
+            # real-time data processing
+            new_data_available = False
+            for i in range(len(mtw_callbacks)):
+                if mtw_callbacks[i].dataAvailable():
+                    new_data_available = True
+                    packet = mtw_callbacks[i].getOldestPacket()
+                    euler_data[i] = packet.orientationEuler()
+                    quarterly_data[i] = packet.orientationQuaternion()  # Update the real-time quaternion data
+                    mtw_callbacks[i].deleteOldestPacket()
 
             if new_data_available:
                 # print only 1/x of the data in the screen.
@@ -332,7 +340,7 @@ if __name__ == '__main__':
                             f"Roll: {euler_data[i].x():7.2f}, "
                             f"Pitch: {euler_data[i].y():7.2f}, "
                             f"Yaw: {euler_data[i].z():7.2f}，"
-                            f"Quaternion: {quarterly_data[i]}"                   #print四元数组
+                            f"Quaternion: {quarterly_data[i]}"                   #print四元数组  还没处理好输出相对四元数
                             )
 
                 print_counter += 1

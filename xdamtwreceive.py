@@ -277,6 +277,7 @@ if __name__ == '__main__':
                     new_data_available = True
                     packet = mtw_callbacks[i].getOldestPacket()
                     euler_data[i] = packet.orientationEuler()
+                    quarterly_data[i] = packet.orientationQuaternion() # 获取四元数
                     mtw_callbacks[i].deleteOldestPacket()
 
             if new_data_available:
@@ -286,7 +287,9 @@ if __name__ == '__main__':
                         print(f"[{i}]: ID: {mtw_callbacks[i].device().deviceId()}, "
                               f"Roll: {euler_data[i].x():7.2f}, "
                               f"Pitch: {euler_data[i].y():7.2f}, "
-                              f"Yaw: {euler_data[i].z():7.2f}")
+                              f"Yaw: {euler_data[i].z():7.2f}，"
+                              f"Quaternion: {quarterly_data[i]}"                   #四元数
+                              )
 
                 print_counter += 1
 

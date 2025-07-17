@@ -315,11 +315,12 @@ if __name__ == '__main__':
                 for i in range(len(mtw_callbacks)):
                     if mtw_callbacks[i].dataAvailable():
                         Q_list=reference_buffer[i]
-                        ave_Q= average_quaternion(Q_list)
+                        ave_Q= average_quaternions(Q_list)
                         reference_quat[i] = ave_Q
 
                 reference_set = True
                 print("Reference data collected.")
+                print(f"Reference Quaternion: {[f'{q.w():.2f}, {q.x():.2f}, {q.y():.2f}, {q.z():.2f}' for q in reference_quat]}")
 
 
 

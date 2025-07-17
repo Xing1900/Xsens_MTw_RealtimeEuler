@@ -265,6 +265,8 @@ if __name__ == '__main__':
         print("Waiting for data available...")
 
         euler_data = [xda.XsEuler()] * len(mtw_callbacks)
+        quarterly_data = [xda.XsQuaternion(None)] * len(mtw_callbacks)   #储存实时四元数
+
         print_counter = 0
         while not user_input_ready():
             time.sleep(0)

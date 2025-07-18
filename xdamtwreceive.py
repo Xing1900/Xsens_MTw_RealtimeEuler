@@ -62,12 +62,13 @@ def find_closest_update_rate(supported_update_rates, desired_update_rate):
 
 def average_quaternions(q_list):
     """对多个四元数简单平均并归一化"""
-    w = sum([q.w for q in q_list]) / len(q_list)
     x = sum([q.x for q in q_list]) / len(q_list)
     y = sum([q.y for q in q_list]) / len(q_list)
     z = sum([q.z for q in q_list]) / len(q_list)
-    norm = math.sqrt(w**2 + x**2 + y**2 + z**2)
-    return Quaternion(w / norm, x / norm, y / norm, z / norm)
+    w = sum([q.w for q in q_list]) / len(q_list)
+    # norm = math.sqrt(w**2 + x**2 + y**2 + z**2)
+    # return Quaternion(w / norm, x / norm, y / norm, z / norm)
+    return Quaternion(w, x, y, z)  # pyquaternion uses (w, x, y, z) order
 
 
 class WirelessMasterCallback(xda.XsCallback):
@@ -286,7 +287,7 @@ if __name__ == '__main__':
         reference_quat = [None] * len(mtw_callbacks)     #储存相对四元数
         reference_set = False
 
-        SAMPLES_FOR_REFERENCE = 100        # Number of samples to collect for reference data
+        SAMPLES_FOR_REFERENCE = 50        # Number of samples to collect for reference data
         reference_buffer = [[] for _ in range(len(mtw_callbacks))]
         wait_for_reference = True
         wait_for_reference1 = True
@@ -311,9 +312,9 @@ if __name__ == '__main__':
                     for i in range(len(mtw_callbacks)):
                         if mtw_callbacks[i].dataAvailable():
                             packet = mtw_callbacks[i].getOldestPacket()
-                            euler_data[i] = packet.orientationEuler()
+                            #euler_data[i] = packet.orientationEuler() 世界坐标系下的绝对欧拉角
                             Q = packet.orientationQuaternion() 
-                            reference_buffer[i].append(Quaternion(Q[0], Q[1], Q[2], Q[3]))
+                            reference_buffer[i].append(Quaternion(Q[0], Q[1], Q[2], Q[3]))  #(w, x, y, z) order for pyquaternion
                             quarterly_data[i] = Quaternion(Q[0], Q[1], Q[2], Q[3])  # Update the real-time quaternion data
                             mtw_callbacks[i].deleteOldestPacket()
 
@@ -334,7 +335,7 @@ if __name__ == '__main__':
                 if mtw_callbacks[i].dataAvailable():
                     new_data_available = True
                     packet = mtw_callbacks[i].getOldestPacket()
-                    euler_data[i] = packet.orientationEuler()
+                    #euler_data[i] = packet.orientationEuler()
                     quarterly_data[i] = packet.orientationQuaternion()  # Update the real-time quaternion data
                     mtw_callbacks[i].deleteOldestPacket()
 
@@ -349,13 +350,13 @@ if __name__ == '__main__':
                         Q_reference = reference_quat[i]
                         
                         # Calculate relative quaternion
-                        Q1=Quaternion(Q_current.w, Q_current.x, Q_current.y, Q_current.z)    
-                        Q2=Quaternion(Q_reference.w, Q_reference.x, Q_reference.y, Q_reference.z)
+                        Q1 = Quaternion(Q_current.w, Q_current.x, Q_current.y, Q_current.z)           # (w, x, y, z) order for pyquaternion
+                        Q2 = Quaternion(Q_reference.w, Q_reference.x, Q_reference.y, Q_reference.z)
 
-                        relative_quat = Q1 * Q2.inverse
+                        relative_quat = Q2.inverse * Q1
 
                         # Convert relative quaternion to Euler angles
-                        roll, pitch, yaw = relative_quat.yaw_pitch_roll  # 返回 (yaw, pitch, roll)
+                        yaw, pitch, roll = relative_quat.yaw_pitch_roll  # 返回 (yaw, pitch, roll)
                         roll = math.degrees(roll)
                         pitch = math.degrees(pitch)
                         yaw = math.degrees(yaw)

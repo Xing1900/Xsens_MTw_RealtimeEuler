@@ -35,6 +35,7 @@ from threading import Lock
 import xsensdeviceapi as xda #for windows only
 import keyboard
 import math
+from pyquaternion import Quaternion 
 
 #remove the added path after importing(optional)
 #sys.path.pop(0)
@@ -101,6 +102,8 @@ class WirelessMasterCallback(xda.XsCallback):
                 self.m_connectedMTWs.discard(dev)
             else:
                 print(f"\nEVENT: MTW Error -> {dev.deviceId()}")
+
+                
                 self.m_connectedMTWs.discard(dev)
 
 class MtwCallback(xda.XsCallback):
@@ -334,10 +337,26 @@ if __name__ == '__main__':
 
             #已经获取初始四元数reference_quat[i],实时四元数quarterly_data[i]，相对四元数relative_quat[i]的计算还没有实现，并转换成欧拉角
 
-            if new_data_available:
+            if new_data_available and reference_set:
                 # print only 1/x of the data in the screen.
                 if print_counter % 1 == 0:
                     for i in range(len(mtw_callbacks)):
+                        Q_current = quarterly_data[i]
+                        Q_reference = reference_quat[i]
+
+                        # Calculate relative quaternion
+                        Q1=Quaternion(Q_current.w(), Q_current.x(), Q_current.y(), Q_current.z())
+                        Q2=Quaternion(Q_reference.w(), Q_reference.x(), Q_reference.y(), Q_reference.z())
+                    
+                        relative_quat = Q1 * Q2.inverse()
+
+                        # Convert relative quaternion to Euler angles
+                        roll, pitch, yaw = relative_quat.yaw_pitch_roll  # 返回 (yaw, pitch, roll)
+                        roll = math.degrees(roll)
+                        pitch = math.degrees(pitch)
+                        yaw = math.degrees(yaw)
+
+
                         print(f"[{i}]: ID: {mtw_callbacks[i].device().deviceId()}, "
                             f"Roll: {euler_data[i].x():7.2f}, "
                             f"Pitch: {euler_data[i].y():7.2f}, "

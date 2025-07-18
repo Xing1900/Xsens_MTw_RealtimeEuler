@@ -12,7 +12,7 @@ pip install keyboard
 
 Xsens Device API is needed, which is included in the MT SDK folder of **MT Software Suite 2022.2**(under the MTw Awinda section, see below picture), download from
 https://www.movella.com/support/software-documentation
-
+```
 pip install xsensdeviceapi-2022.2.0-cp38-none-win_amd64.whl
 ```
 In ubuntu, you may need to uncomment these lines, because there might be error: _no Modules found_:
@@ -33,7 +33,8 @@ python xdamtwreceive.py
 ```
 
 ### Notes:
-if you want to align the initial heading among multiple sensors, or doing heading reset, you need to firstly physically align these sensors with the same heading,
+Open VScode with anaconda python 3.9 virtual environment.
+If you want to align the initial heading among multiple sensors, or doing heading reset, you need to firstly physically align these sensors with the same heading,
 then you could uncomment these lines(line 257 to 260):
 ```
 else:

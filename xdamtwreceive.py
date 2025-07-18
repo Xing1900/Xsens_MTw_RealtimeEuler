@@ -62,12 +62,12 @@ def find_closest_update_rate(supported_update_rates, desired_update_rate):
 
 def average_quaternions(q_list):
     """对多个四元数简单平均并归一化"""
-    w = sum([q.w() for q in q_list]) / len(q_list)
-    x = sum([q.x() for q in q_list]) / len(q_list)
-    y = sum([q.y() for q in q_list]) / len(q_list)
-    z = sum([q.z() for q in q_list]) / len(q_list)
+    w = sum([q.w for q in q_list]) / len(q_list)
+    x = sum([q.x for q in q_list]) / len(q_list)
+    y = sum([q.y for q in q_list]) / len(q_list)
+    z = sum([q.z for q in q_list]) / len(q_list)
     norm = math.sqrt(w**2 + x**2 + y**2 + z**2)
-    return xda.XsQuaternion(x / norm, y / norm, z / norm, w / norm)
+    return Quaternion(w / norm, x / norm, y / norm, z / norm)
 
 
 class WirelessMasterCallback(xda.XsCallback):
@@ -289,6 +289,7 @@ if __name__ == '__main__':
         SAMPLES_FOR_REFERENCE = 100        # Number of samples to collect for reference data
         reference_buffer = [[] for _ in range(len(mtw_callbacks))]
         wait_for_reference = True
+        wait_for_reference1 = True
 
         print_counter = 0
         while not user_input_ready():
@@ -296,7 +297,9 @@ if __name__ == '__main__':
 
             while wait_for_reference:
                 time.sleep(0.1)
-                print(f" Press 'Space' to start getting reference orientation.")
+                if wait_for_reference1:
+                    print(f" Press 'Space' to start getting reference orientation.")
+                    wait_for_reference1=False                         #使得仅打印一次
                 wait_for_reference = not keyboard.is_pressed('space')
 
             if  not reference_set:
@@ -310,8 +313,8 @@ if __name__ == '__main__':
                             packet = mtw_callbacks[i].getOldestPacket()
                             euler_data[i] = packet.orientationEuler()
                             Q = packet.orientationQuaternion() 
-                            reference_buffer[i].append(Q)
-                            quarterly_data[i] = Q  # Update the real-time quaternion data
+                            reference_buffer[i].append(Quaternion(Q[0], Q[1], Q[2], Q[3]))
+                            quarterly_data[i] = Quaternion(Q[0], Q[1], Q[2], Q[3])  # Update the real-time quaternion data
                             mtw_callbacks[i].deleteOldestPacket()
 
                 # Collect reference quaternion data
@@ -323,7 +326,7 @@ if __name__ == '__main__':
 
                 reference_set = True
                 print("Reference data collected.")
-                print(f"Reference Quaternion: {[f'{q.w():.2f}, {q.x():.2f}, {q.y():.2f}, {q.z():.2f}' for q in reference_quat]}")
+                print(f"Reference Quaternion: {[f'{q.w:.10f}, {q.x:.10f}, {q.y:.10f}, {q.z:.10f}' for q in reference_quat]}")
 
             # real-time data processing
             new_data_available = False

@@ -338,20 +338,21 @@ if __name__ == '__main__':
                     quarterly_data[i] = packet.orientationQuaternion()  # Update the real-time quaternion data
                     mtw_callbacks[i].deleteOldestPacket()
 
-            #已经获取初始四元数reference_quat[i],实时四元数quarterly_data[i]，相对四元数relative_quat[i]的计算还没有实现，并转换成欧拉角
+            #相对四元数relative_quat[i]的计算实现以及转换成欧拉角已经实现，但是公式有错！
 
             if new_data_available and reference_set:
                 # print only 1/x of the data in the screen.
                 if print_counter % 1 == 0:
                     for i in range(len(mtw_callbacks)):
                         Q_current = quarterly_data[i]
+                        Q_current = Quaternion(Q_current[0], Q_current[1], Q_current[2], Q_current[3]) # Convert to pyquaternion Quaternion
                         Q_reference = reference_quat[i]
-
+                        
                         # Calculate relative quaternion
-                        Q1=Quaternion(Q_current.w(), Q_current.x(), Q_current.y(), Q_current.z())
-                        Q2=Quaternion(Q_reference.w(), Q_reference.x(), Q_reference.y(), Q_reference.z())
-                    
-                        relative_quat = Q1 * Q2.inverse()
+                        Q1=Quaternion(Q_current.w, Q_current.x, Q_current.y, Q_current.z)    
+                        Q2=Quaternion(Q_reference.w, Q_reference.x, Q_reference.y, Q_reference.z)
+
+                        relative_quat = Q1 * Q2.inverse
 
                         # Convert relative quaternion to Euler angles
                         roll, pitch, yaw = relative_quat.yaw_pitch_roll  # 返回 (yaw, pitch, roll)
@@ -361,10 +362,9 @@ if __name__ == '__main__':
 
 
                         print(f"[{i}]: ID: {mtw_callbacks[i].device().deviceId()}, "
-                            f"Roll: {euler_data[i].x():7.2f}, "
-                            f"Pitch: {euler_data[i].y():7.2f}, "
-                            f"Yaw: {euler_data[i].z():7.2f}, "
-                            f"Quaternion: {quarterly_data[i]}"                   #print四元数组  
+                            f"Roll: {roll:2f}, "
+                            f"Pitch: {pitch:2f}, "
+                            f"Yaw: {yaw:2f}, "
                             )
 
                 print_counter += 1
